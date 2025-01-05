@@ -6,6 +6,7 @@ import cv2
 import time
 import pygame
 from random import randint, choice
+import math
 
 # Inicialización de MediaPipe y variables
 model_path = 'hand_landmarker.task'
@@ -64,6 +65,14 @@ def generate_random_shape():
 # Inicializar forma aleatoria para la bola y el cuadrado
 current_shape = generate_random_shape()
 
+# Función para calcular el ángulo entre dos puntos
+def calculate_angle(p1, p2):
+    # Usamos la fórmula para calcular el ángulo entre dos puntos
+    dx = p2[0] - p1[0]
+    dy = p2[1] - p1[1]
+    angle = math.degrees(math.atan2(dy, dx))  # Convertimos el ángulo a grados
+    return angle
+
 options = HandLandmarkerOptions(
     base_options=BaseOptions(model_asset_path=model_path),
     running_mode=VisionRunningMode.LIVE_STREAM,
@@ -73,6 +82,7 @@ options = HandLandmarkerOptions(
 with HandLandmarker.create_from_options(options) as landmarker:
     cap = cv2.VideoCapture(0)
     running = True
+    random_angle = randint(0, 360)  # Ángulo aleatorio fijo para la figura estática
     while cap.isOpened() and running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -96,6 +106,7 @@ with HandLandmarker.create_from_options(options) as landmarker:
 
         # Convertir la imagen de OpenCV (BGR) a Pygame (RGB)
         image_rgb = cv2.cvtColor(image_resized, cv2.COLOR_BGR2RGB)
+        angle = 0
 
         if detection_result is not None and len(detection_result.hand_landmarks) > 0:
             landmarks = detection_result.hand_landmarks[0]  # Solo usamos la primera mano detectada
@@ -118,6 +129,9 @@ with HandLandmarker.create_from_options(options) as landmarker:
             # Mover la bola con la mano (posicionar la bola en el centro de la mano)
             ball_x = screen_width - screen_x  # Invertir la coordenada x para compensar el espejo
             ball_y = screen_y
+
+            # Calcular el ángulo de rotación basado en el pulgar y el meñique
+            angle = calculate_angle((thumb_tip.x, thumb_tip.y), (pinky_tip.x, pinky_tip.y))
 
             # Verificar si la bola colide con la forma
             if (square_position[0] <= ball_x <= square_position[0] + square_size and
@@ -144,32 +158,53 @@ with HandLandmarker.create_from_options(options) as landmarker:
         
         # Dibujar la forma en la pantalla
         if current_shape == 'circle':
-            pygame.draw.circle(screen, (255, 0, 0), (square_position[0] + square_size // 2, square_position[1] + square_size // 2), square_size // 2)
+            # Rotar la figura antes de dibujarla
+            rotated_surface = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
+            pygame.draw.circle(rotated_surface, (255, 0, 0), (square_size // 2, square_size // 2), square_size // 2)
+            rotated_surface = pygame.transform.rotate(rotated_surface, random_angle)  # Rotación fija
+            screen.blit(rotated_surface, (square_position[0] - rotated_surface.get_width() // 2,
+                                          square_position[1] - rotated_surface.get_height() // 2))
         elif current_shape == 'square':
-            pygame.draw.rect(screen, (255, 0, 0), (*square_position, square_size, square_size))
+            rotated_surface = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
+            pygame.draw.rect(rotated_surface, (255, 0, 0), (0, 0, square_size, square_size))
+            rotated_surface = pygame.transform.rotate(rotated_surface, random_angle)  # Rotación fija
+            screen.blit(rotated_surface, (square_position[0] - rotated_surface.get_width() // 2,
+                                          square_position[1] - rotated_surface.get_height() // 2))
         elif current_shape == 'triangle':
-            points = [(square_position[0] + square_size // 2, square_position[1]), 
-                      (square_position[0], square_position[1] + square_size), 
-                      (square_position[0] + square_size, square_position[1] + square_size)]
-            pygame.draw.polygon(screen, (255, 0, 0), points)
+            points = [(square_size // 2, 0), (0, square_size), (square_size, square_size)]
+            rotated_surface = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
+            pygame.draw.polygon(rotated_surface, (255, 0, 0), points)
+            rotated_surface = pygame.transform.rotate(rotated_surface, random_angle)  # Rotación fija
+            screen.blit(rotated_surface, (square_position[0] - rotated_surface.get_width() // 2,
+                                          square_position[1] - rotated_surface.get_height() // 2))
 
         # Dibujar la bola (con la misma forma que la figura)
         if current_shape == 'circle':
-            pygame.draw.circle(screen, (0, 0, 255), (ball_x, ball_y), ball_radius)
+            rotated_ball = pygame.Surface((ball_radius * 2, ball_radius * 2), pygame.SRCALPHA)
+            pygame.draw.circle(rotated_ball, (0, 0, 255), (ball_radius, ball_radius), ball_radius)
+            rotated_ball = pygame.transform.rotate(rotated_ball, angle)  # Rotación dinámica
+            screen.blit(rotated_ball, (ball_x - rotated_ball.get_width() // 2, ball_y - rotated_ball.get_height() // 2))
         elif current_shape == 'square':
-            pygame.draw.rect(screen, (0, 0, 255), (ball_x - ball_radius, ball_y - ball_radius, ball_radius * 2, ball_radius * 2))
+            rotated_ball = pygame.Surface((ball_radius * 2, ball_radius * 2), pygame.SRCALPHA)
+            pygame.draw.rect(rotated_ball, (0, 0, 255), (0, 0, ball_radius * 2, ball_radius * 2))
+            rotated_ball = pygame.transform.rotate(rotated_ball, angle)  # Rotación dinámica
+            screen.blit(rotated_ball, (ball_x - rotated_ball.get_width() // 2, ball_y - rotated_ball.get_height() // 2))
         elif current_shape == 'triangle':
-            points = [(ball_x, ball_y - ball_radius), 
-                      (ball_x - ball_radius, ball_y + ball_radius), 
-                      (ball_x + ball_radius, ball_y + ball_radius)]
-            pygame.draw.polygon(screen, (0, 0, 255), points)
+            points_ball = [(ball_radius, 0), (0, ball_radius * 2), (ball_radius * 2, ball_radius * 2)]
+            rotated_ball = pygame.Surface((ball_radius * 2, ball_radius * 2), pygame.SRCALPHA)
+            pygame.draw.polygon(rotated_ball, (0, 0, 255), points_ball)
+            rotated_ball = pygame.transform.rotate(rotated_ball, angle)  # Rotación dinámica
+            screen.blit(rotated_ball, (ball_x - rotated_ball.get_width() // 2, ball_y - rotated_ball.get_height() // 2))
 
-        score_text = font.render(f"Puntos: {score}", True, (0, 0, 0))
-        screen.blit(score_text, (10, 10))
+        # Mostrar el puntaje
+        score_text = font.render(f"Score: {score}", True, (255, 255, 255))
+        screen.blit(score_text, (20, 20))
+
+        # Actualizar pantalla
         pygame.display.flip()
+
+        # Limitar los FPS
         clock.tick(60)
 
-cap.release()
-pygame.quit()
-
-
+    cap.release()
+    pygame.quit()
