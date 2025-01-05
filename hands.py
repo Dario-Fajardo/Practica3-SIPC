@@ -5,7 +5,7 @@ import numpy as np
 import cv2
 import time
 import pygame
-from random import randint
+from random import randint, choice
 
 # Inicialización de MediaPipe y variables
 model_path = 'hand_landmarker.task'
@@ -48,14 +48,21 @@ font = pygame.font.Font(None, 36)
 
 # Variables del juego
 score = 0
-square_size = 80  # Tamaño del cuadrado más grande
+square_size = 80  # Tamaño de la forma
 square_position = [randint(0, screen_width - square_size), randint(0, screen_height - square_size)]
 square_timer = 0
-square_lifetime = 10  # Ahora el cuadrado vive durante 10 segundos
+square_lifetime = 10  # Ahora la forma vive durante 10 segundos
 
 # Crear la bola que se moverá con la mano
 ball_radius = 40  # Radio de la bola más grande
 ball_x, ball_y = screen_width // 2, screen_height // 2  # Posición inicial de la bola en el centro de la pantalla
+
+# Generar figura aleatoria (puede ser 'circle', 'square' o 'triangle')
+def generate_random_shape():
+    return choice(['circle', 'square', 'triangle'])
+
+# Inicializar forma aleatoria para la bola y el cuadrado
+current_shape = generate_random_shape()
 
 options = HandLandmarkerOptions(
     base_options=BaseOptions(model_asset_path=model_path),
@@ -112,16 +119,20 @@ with HandLandmarker.create_from_options(options) as landmarker:
             ball_x = screen_width - screen_x  # Invertir la coordenada x para compensar el espejo
             ball_y = screen_y
 
-            # Verificar si la bola colide con el cuadrado
+            # Verificar si la bola colide con la forma
             if (square_position[0] <= ball_x <= square_position[0] + square_size and
                 square_position[1] <= ball_y <= square_position[1] + square_size):
                 score += 1
+                # Cambiar la figura aleatoriamente
+                current_shape = generate_random_shape()
                 square_position = [randint(0, screen_width - square_size), randint(0, screen_height - square_size)]
-                square_timer = 0  # Reiniciar el tiempo del cuadrado
+                square_timer = 0  # Reiniciar el tiempo de la forma
 
         # Actualizar el temporizador del cuadrado
         square_timer += clock.get_time() / 1000
         if square_timer >= square_lifetime:
+            # Cambiar la figura aleatoriamente cuando se agota el temporizador
+            current_shape = generate_random_shape()
             square_position = [randint(0, screen_width - square_size), randint(0, screen_height - square_size)]
             square_timer = 0
 
@@ -130,8 +141,28 @@ with HandLandmarker.create_from_options(options) as landmarker:
 
         # Dibujar elementos en pantalla
         screen.blit(frame_surface, (0, 0))  # Imagen de la cámara como fondo
-        pygame.draw.rect(screen, (255, 0, 0), (*square_position, square_size, square_size))  # Cuadrado rojo
-        pygame.draw.circle(screen, (0, 0, 255), (ball_x, ball_y), ball_radius)  # Bola azul
+        
+        # Dibujar la forma en la pantalla
+        if current_shape == 'circle':
+            pygame.draw.circle(screen, (255, 0, 0), (square_position[0] + square_size // 2, square_position[1] + square_size // 2), square_size // 2)
+        elif current_shape == 'square':
+            pygame.draw.rect(screen, (255, 0, 0), (*square_position, square_size, square_size))
+        elif current_shape == 'triangle':
+            points = [(square_position[0] + square_size // 2, square_position[1]), 
+                      (square_position[0], square_position[1] + square_size), 
+                      (square_position[0] + square_size, square_position[1] + square_size)]
+            pygame.draw.polygon(screen, (255, 0, 0), points)
+
+        # Dibujar la bola (con la misma forma que la figura)
+        if current_shape == 'circle':
+            pygame.draw.circle(screen, (0, 0, 255), (ball_x, ball_y), ball_radius)
+        elif current_shape == 'square':
+            pygame.draw.rect(screen, (0, 0, 255), (ball_x - ball_radius, ball_y - ball_radius, ball_radius * 2, ball_radius * 2))
+        elif current_shape == 'triangle':
+            points = [(ball_x, ball_y - ball_radius), 
+                      (ball_x - ball_radius, ball_y + ball_radius), 
+                      (ball_x + ball_radius, ball_y + ball_radius)]
+            pygame.draw.polygon(screen, (0, 0, 255), points)
 
         score_text = font.render(f"Puntos: {score}", True, (0, 0, 0))
         screen.blit(score_text, (10, 10))
@@ -140,4 +171,5 @@ with HandLandmarker.create_from_options(options) as landmarker:
 
 cap.release()
 pygame.quit()
+
 
