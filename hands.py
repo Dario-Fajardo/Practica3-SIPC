@@ -38,10 +38,11 @@ def draw_landmarks_on_image(rgb_image, detection_result):
             solutions.drawing_styles.get_default_hand_connections_style())
     return annotated_image
 
-# Configuración de Pygame para ventana de 1920x1080
+# Configuración de Pygame para ventana ajustada al tamaño de la pantalla
 pygame.init()
-screen_width, screen_height = 1920, 1080  # Tamaño fijo de la ventana
-screen = pygame.display.set_mode((screen_width, screen_height))  # Ventana de tamaño fijo
+screen_info = pygame.display.Info()  # Obtener información de la pantalla
+screen_width, screen_height = screen_info.current_w, screen_info.current_h  # Resolución de la pantalla
+screen = pygame.display.set_mode((screen_width, screen_height))  # Ventana en modo ventana, no pantalla completa
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 36)
 
@@ -78,7 +79,7 @@ with HandLandmarker.create_from_options(options) as landmarker:
         # Obtener las dimensiones de la imagen de la cámara
         camera_height, camera_width, _ = image.shape
 
-        # Redimensionar la imagen de la cámara para que encaje en la ventana de 1920x1080
+        # Redimensionar la imagen de la cámara para que encaje en la ventana
         image_resized = cv2.resize(image, (screen_width, screen_height))
 
         # Procesar la imagen de la cámara
@@ -139,3 +140,4 @@ with HandLandmarker.create_from_options(options) as landmarker:
 
 cap.release()
 pygame.quit()
+
