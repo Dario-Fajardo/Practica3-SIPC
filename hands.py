@@ -160,7 +160,6 @@ def calculate_angle(p1, p2):
     delta_y = p2.y - p1.y
     return math.atan2(delta_y, delta_x)  # Devuelve el ángulo en radianes
 
-
 # Función principal del juego
 def run_game():
     global score, squares, last_square_time
@@ -240,7 +239,7 @@ def run_game():
                     screen_y = int(center_y * screen_height)
 
                     # Calcular el ángulo entre el pulgar y el meñique
-                    angle = calculate_angle(thumb_tip, pinky_tip)
+                    angle = math.degrees(calculate_angle(thumb_tip, pinky_tip))
 
                     # Dibujar las landmarks sobre la imagen
                     image_rgb = draw_landmarks_on_image(image_rgb, detection_result)
@@ -320,10 +319,11 @@ def run_game():
                 screen.blit(frame_surface, (0, 0))  # Imagen de la cámara como fondo
 
                 # Dibujar el cuadrado controlado por la mano
-                rotated_square = pygame.Surface((square_size, square_size))
-                pygame.draw.rect(rotated_square, (0, 255, 0), (0, 0, square_size, square_size))
-                rotated_square = pygame.transform.rotate(rotated_square, math.degrees(angle))
-                screen.blit(rotated_square, (player_square_x - square_size // 2, player_square_y - square_size // 2))
+                square_image = pygame.Surface((square_size_player, square_size_player), pygame.SRCALPHA)  # Crear una superficie para el cuadrado
+                square_image.fill((0, 255, 0))  # Rellenar de verde
+                rotated_square = pygame.transform.rotate(square_image, angle)  # Rotar el cuadrado según el ángulo
+                square_rect = rotated_square.get_rect(center=(player_square_x, player_square_y))  # Obtener el rectángulo del cuadrado rotado
+                screen.blit(rotated_square, square_rect)  # Dibujar el cuadrado rotado en pantalla
                 
                 # Dibujar los cuadrados
                 for square in squares:
