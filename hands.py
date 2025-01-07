@@ -320,11 +320,11 @@ def run_game():
                 screen.blit(frame_surface, (0, 0))  # Imagen de la cámara como fondo
 
                 # Dibujar el cuadrado controlado por la mano
-                square_image = pygame.Surface((square_size_player, square_size_player))
-                square_image.fill((0, 255, 0))  # Color verde
-                screen.blit(square_image, (player_square_x - square_size_player // 2, player_square_y - square_size_player // 2))
+                rotated_square = pygame.Surface((square_size, square_size))
+                pygame.draw.rect(rotated_square, (0, 255, 0), (0, 0, square_size, square_size))
+                rotated_square = pygame.transform.rotate(rotated_square, math.degrees(angle))
+                screen.blit(rotated_square, (player_square_x - square_size // 2, player_square_y - square_size // 2))
                 
-
                 # Dibujar los cuadrados
                 for square in squares:
                     pygame.draw.rect(screen, (255, 0, 0), (*square['position'], square_size, square_size))
