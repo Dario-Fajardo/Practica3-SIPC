@@ -67,8 +67,6 @@ new_square_interval = 2  # Intervalo en segundos para generar nuevos cuadrados
 gravity = 0.5
 bounce_factor = 0.8  # Factor de rebote
 
-# Crear la bola que se moverá con la manoplayer_square_x, player_square_y = screen_width // 2, screen_height // 2  # Posición inicial de la bola en el centro de la pantalla
-
 # Función para mostrar la pantalla de "Game Over"
 def show_game_over_screen(final_score, high_score):
     game_over = True
@@ -359,7 +357,7 @@ def show_main_menu(high_score):
     menu_running = True
     while menu_running:
         screen.fill((255, 255, 255))  # Fondo blanco
-        title_text = font.render("Juego de la Mano", True, (0, 0, 0))
+        title_text = font.render("Catch the Box", True, (0, 0, 0))
         high_score_text = font.render(f"Mejor puntuación: {high_score}", True, (0, 0, 0))
         start_text = font.render("Presiona Enter para comenzar", True, (0, 0, 0))
         quit_text = font.render("Presiona Q para salir", True, (0, 0, 0))
